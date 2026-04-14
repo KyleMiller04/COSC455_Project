@@ -2,6 +2,9 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+// Main compiler struct
+// Stores the input characters, current position, current character,
+// and all tokens found during lexical analysis.
 struct MyCompiler {
     input: Vec<char>,
     position: usize,
@@ -10,6 +13,7 @@ struct MyCompiler {
 }
 
 impl MyCompiler {
+    // Creates a new compiler from the source text
     fn new(source: &str) -> Self {
         let chars: Vec<char> = source.chars().collect();
         let first_char = chars.first().cloned();
@@ -22,6 +26,7 @@ impl MyCompiler {
         }
     }
 
+    // Advances to the next character in the input
     fn advance(&mut self) {
         self.position += 1;
         if self.position < self.input.len() {
@@ -31,6 +36,7 @@ impl MyCompiler {
         }
     }
 
+    // Skips over whitespace characters
     fn skip_whitespace(&mut self) {
         while let Some(c) = self.current_char {
             if c.is_whitespace() {
@@ -41,6 +47,7 @@ impl MyCompiler {
         }
     }
 
+    // Checks if a token is one of the valid LOLCODE keywords/tags
     fn lookup(&self, token: &str) -> bool {
         matches!(
             token,
@@ -67,6 +74,7 @@ impl MyCompiler {
         )
     }
 
+    // Gets the next token from the input character-by-character
     fn get_next_token(&mut self) -> String {
         self.skip_whitespace();
 
@@ -74,6 +82,7 @@ impl MyCompiler {
             return "EOF".to_string();
         };
 
+        // Handle LOLCODE tags like #HAI, #KBYE, #MAEK, etc.
         if c == '#' {
             let mut result = String::new();
             result.push(c);
@@ -91,6 +100,7 @@ impl MyCompiler {
             return result;
         }
 
+        // Handle words like HEAD, TITLE, PARAGRAF, etc.
         if c.is_alphabetic() {
             let mut result = String::new();
 
@@ -106,6 +116,7 @@ impl MyCompiler {
             return result;
         }
 
+        // Handle numbers
         if c.is_numeric() {
             let mut result = String::new();
 
@@ -121,10 +132,16 @@ impl MyCompiler {
             return result;
         }
 
+        // Handle punctuation or single-character text
         self.advance();
         c.to_string()
     }
 
+    // Main compilation process:
+    // 1. Perform lexical analysis
+    // 2. Store tokens
+    // 3. Run syntax analysis
+    // 4. Generate HTML if syntax is valid
     fn compile(&mut self, input_filename: &str) {
         println!("Starting lexical analysis...");
 
@@ -134,6 +151,7 @@ impl MyCompiler {
                 break;
             }
 
+            // Classify the token as valid keyword or normal text
             if token.starts_with('#') || token.chars().all(|c| c.is_alphanumeric()) {
                 if self.lookup(&token) {
                     println!("VALID TOKEN: {}", token);
@@ -144,29 +162,35 @@ impl MyCompiler {
                 println!("TEXT: {}", token);
             }
 
+            // Save token for parsing later
             self.tokens.push(token);
         }
 
         println!("Lexical analysis complete.");
 
+        // Only continue if syntax analysis passes
         if self.parse() {
             self.generate_html(input_filename);
         }
     }
 
+    // Performs basic syntax analysis on the token list
     fn parse(&self) -> bool {
         println!("\nStarting syntax analysis...");
 
+        // Check for empty input
         if self.tokens.is_empty() {
             println!("Syntax Error: input is empty.");
             return false;
         }
 
+        // Check that file starts with #HAI
         if self.tokens.first().map(String::as_str) != Some("#HAI") {
             println!("Syntax Error: file must start with #HAI");
             return false;
         }
 
+        // Check that file ends with #KBYE
         if self.tokens.last().map(String::as_str) != Some("#KBYE") {
             println!("Syntax Error: file must end with #KBYE");
             return false;
@@ -174,8 +198,10 @@ impl MyCompiler {
 
         let mut i = 0;
 
+        // Walk through tokens and validate block structure
         while i < self.tokens.len() {
             match self.tokens[i].as_str() {
+                // Check comment block
                 "#OBTW" => {
                     i += 1;
                     while i < self.tokens.len() && self.tokens[i] != "#TLDR" {
@@ -187,6 +213,7 @@ impl MyCompiler {
                     }
                 }
 
+                // Check MAEK blocks
                 "#MAEK" => {
                     if i + 1 < self.tokens.len() && self.tokens[i + 1] == "HEAD" {
                         i += 2;
@@ -218,6 +245,7 @@ impl MyCompiler {
                     }
                 }
 
+                // Check GIMMEH blocks
                 "#GIMMEH" => {
                     if i + 1 < self.tokens.len() && self.tokens[i + 1] == "TITLE" {
                         i += 2;
@@ -255,6 +283,7 @@ impl MyCompiler {
         true
     }
 
+    // Generates HTML output from the token list
     fn generate_html(&self, input_filename: &str) {
         println!("\nGenerating HTML...");
 
@@ -263,9 +292,11 @@ impl MyCompiler {
 
         while i < self.tokens.len() {
             match self.tokens[i].as_str() {
+                // Start and end of HTML document
                 "#HAI" => html.push_str("<html>\n<body>\n"),
                 "#KBYE" => html.push_str("</body>\n</html>\n"),
 
+                // Comment block
                 "#OBTW" => {
                     html.push_str("<!-- ");
                     i += 1;
@@ -277,6 +308,7 @@ impl MyCompiler {
                     html.push_str("-->\n");
                 }
 
+                // Handle MAEK blocks
                 "#MAEK" => {
                     if i + 1 < self.tokens.len() {
                         match self.tokens[i + 1].as_str() {
@@ -297,6 +329,7 @@ impl MyCompiler {
                     }
                 }
 
+                // Close blocks
                 "#MKAY" => {
                     if html.ends_with("<head>\n") {
                         html.push_str("</head>\n");
@@ -307,6 +340,7 @@ impl MyCompiler {
                     }
                 }
 
+                // Handle GIMMEH blocks
                 "#GIMMEH" => {
                     if i + 1 < self.tokens.len() {
                         match self.tokens[i + 1].as_str() {
@@ -365,8 +399,10 @@ impl MyCompiler {
                     }
                 }
 
+                // Handle newline
                 "#NEWLINE" => html.push_str("<br>\n"),
 
+                // Handle regular text
                 token => {
                     if !token.starts_with('#')
                         && token != "HEAD"
@@ -387,9 +423,11 @@ impl MyCompiler {
             i += 1;
         }
 
+        // Create output filename with .html extension
         let output_filename = Path::new(input_filename)
             .with_extension("html");
 
+        // Write HTML output file
         match fs::write(&output_filename, html) {
             Ok(_) => println!("HTML file generated: {}", output_filename.display()),
             Err(err) => println!("Failed to write HTML file: {}", err),
@@ -397,9 +435,11 @@ impl MyCompiler {
     }
 }
 
+// Program entry point
 fn main() {
     let args: Vec<String> = env::args().collect();
 
+    // Check that an input file was provided
     if args.len() < 2 {
         println!("Usage: cargo run <file.lol>");
         return;
@@ -407,14 +447,17 @@ fn main() {
 
     let filename = &args[1];
 
+    // Check that the file has the correct extension
     if !filename.ends_with(".lol") {
         println!("Error: Must be a .lol file");
         return;
     }
 
+    // Read the source file
     let contents = fs::read_to_string(filename)
         .expect("Failed to read file");
 
+    // Create compiler and start compilation
     let mut compiler = MyCompiler::new(&contents);
     compiler.compile(filename);
 }
