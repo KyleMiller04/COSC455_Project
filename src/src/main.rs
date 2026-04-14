@@ -107,6 +107,22 @@ impl MyCompiler {
             return result;
         }
 
+        // Handle numbers
+        if c.is_numeric() {
+            let mut result = String::new();
+
+            while let Some(ch) = self.current_char {
+                if ch.is_numeric() {
+                    result.push(ch);
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
+
+            return result;
+        }
+
         // Handle punctuation or single characters as text
         self.advance();
         c.to_string()
@@ -140,7 +156,7 @@ impl MyCompiler {
     }
 
     fn parse(&self) {
-        println!("\nStarting simple syntax check...");
+        println!("\nStarting syntax analysis...");
 
         if self.tokens.is_empty() {
             println!("Syntax Error: input is empty.");
@@ -157,7 +173,86 @@ impl MyCompiler {
             return;
         }
 
-        println!("Basic syntax check passed.");
+        let mut i = 0;
+
+        while i < self.tokens.len() {
+            match self.tokens[i].as_str() {
+                "#OBTW" => {
+                    i += 1;
+                    while i < self.tokens.len() && self.tokens[i] != "#TLDR" {
+                        i += 1;
+                    }
+                    if i >= self.tokens.len() {
+                        println!("Syntax Error: comment started with #OBTW but missing #TLDR");
+                        return;
+                    }
+                }
+
+                "#MAEK" => {
+                    if i + 1 < self.tokens.len() && self.tokens[i + 1] == "HEAD" {
+                        i += 2;
+                        while i < self.tokens.len() && self.tokens[i] != "#MKAY" {
+                            i += 1;
+                        }
+                        if i >= self.tokens.len() {
+                            println!("Syntax Error: HEAD block missing #MKAY");
+                            return;
+                        }
+                    } else if i + 1 < self.tokens.len() && self.tokens[i + 1] == "PARAGRAF" {
+                        i += 2;
+                        while i < self.tokens.len() && self.tokens[i] != "#MKAY" {
+                            i += 1;
+                        }
+                        if i >= self.tokens.len() {
+                            println!("Syntax Error: PARAGRAF block missing #MKAY");
+                            return;
+                        }
+                    } else if i + 1 < self.tokens.len() && self.tokens[i + 1] == "LIST" {
+                        i += 2;
+                        while i < self.tokens.len() && self.tokens[i] != "#MKAY" {
+                            i += 1;
+                        }
+                        if i >= self.tokens.len() {
+                            println!("Syntax Error: LIST block missing #MKAY");
+                            return;
+                        }
+                    }
+                }
+
+                "#GIMMEH" => {
+                    if i + 1 < self.tokens.len() && self.tokens[i + 1] == "TITLE" {
+                        i += 2;
+                        while i < self.tokens.len() && self.tokens[i] != "#OIC" {
+                            i += 1;
+                        }
+                        if i >= self.tokens.len() {
+                            println!("Syntax Error: TITLE block missing #OIC");
+                            return;
+                        }
+                    } else if i + 1 < self.tokens.len()
+                        && (self.tokens[i + 1] == "BOLD"
+                            || self.tokens[i + 1] == "ITALICS"
+                            || self.tokens[i + 1] == "ITEM"
+                            || self.tokens[i + 1] == "LINX")
+                    {
+                        i += 2;
+                        while i < self.tokens.len() && self.tokens[i] != "#OIC" {
+                            i += 1;
+                        }
+                        if i >= self.tokens.len() {
+                            println!("Syntax Error: GIMMEH block missing #OIC");
+                            return;
+                        }
+                    }
+                }
+
+                _ => {}
+            }
+
+            i += 1;
+        }
+
+        println!("Syntax analysis passed.");
     }
 }
 
