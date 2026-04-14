@@ -1,0 +1,8 @@
+Tokens:
+HAI, KBYE, MAEK, GIMMEH, MKAY, OIC
+
+TEXT:
+letters and words
+
+Flow:
+Start → Read tokens → End

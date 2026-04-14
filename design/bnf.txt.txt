@@ -1,0 +1,6 @@
+<program> ::= HAI <body> KBYE
+<body> ::= <statement> <body> | ε
+<statement> ::= <paragraph> | <bold> | <italics> | TEXT
+<paragraph> ::= MAEK PARAGRAF TEXT MKAY
+<bold> ::= GIMMEH BOLD TEXT OIC
+<italics> ::= GIMMEH ITALICS TEXT OIC
